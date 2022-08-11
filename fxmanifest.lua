@@ -3,6 +3,12 @@ lua54 'yes'
 game 'gta5'
 -- use_fxv2_oal 'yes'
 
+version '2.0'
+
+server_scripts {
+    'versionchecker.lua',
+}
+
 client_scripts {
     'client/cl_scaleform_helpers.lua',
     'client/cl_scaleform_functions.lua',
