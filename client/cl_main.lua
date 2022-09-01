@@ -118,7 +118,7 @@ AddEventHandler("cS.Countdown", function(_r, _g, _b, _waitTime, _playSound)
     local time = _waitTime
     local scale = 0
     if _playSound ~= nil and _playSound == true then
-        PlaySoundFrontend(-1, "3_2_1", "HUD_MINI_GAME_SOUNDSET", 0)
+        PlaySoundFrontend(-1, "Countdown_1", "DLC_AW_Frontend_Sounds", 0)
     end
     scale = showCountdown(time, _r, _g, _b)
     CreateThread(function()
@@ -128,12 +128,14 @@ AddEventHandler("cS.Countdown", function(_r, _g, _b, _waitTime, _playSound)
                 time = time - 1
                 scale = showCountdown(time, _r, _g, _b)
 				if _playSound ~= nil and _playSound == true then
-					PlaySoundFrontend(-1, "3_2_1", "HUD_MINI_GAME_SOUNDSET", 0)
+					PlaySoundFrontend(-1, "Countdown_1", "DLC_AW_Frontend_Sounds", 0)
+				end
+				if time == 1 then
+					PlaySoundFrontend(-1, "Countdown_Go", "DLC_AW_Frontend_Sounds", 0)
 				end
             elseif time == 1 then
                 time = time - 1
                 scale = showCountdown("GO", 0, 128, 255)
-				PlaySoundFrontend(-1, "GO", "HUD_MINI_GAME_SOUNDSET", 0)
             else
                 showCD = false
             end
