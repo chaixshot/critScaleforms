@@ -2,32 +2,32 @@
 RegisterCommand('ba', function() --shows big banner
     --TriggerEvent('cS.banner', _title, _subtitle, _waitTimeSeconds, _playShound)
     TriggerEvent('cS.banner', "~y~Test Banner~s~.", "You ~g~can ~r~use ~y~colors ~b~here ~s~too.", 5, true)
-end)
+end, false)
 
 RegisterCommand('mq', function() --"Mission Quit" scaleform. Low opacity black background with title and subtitle.
     --TriggerEvent("cS.missionQuit", _title, _subtitle, _waitTimeSeconds, _playShound)
     TriggerEvent("cS.missionQuit", "~y~Test Scaleform~s~.", "You ~g~can ~r~use ~y~colors ~b~here ~s~too.", 5, true)
-end)
+end, false)
 
 RegisterCommand('st', function() --"Splash Text" scaleform. This is a simple text in the middle of the scree, with cursive font.
     --TriggerEvent("cS.SplashText", _text, _waitTimeSeconds, _playShound)
     TriggerEvent("cS.SplashText", "~y~Test Scaleform~s~.", 5, true)
-end)
+end, false)
 
 RegisterCommand('pw', function() --Popup Warning. Opaque black background, with Title, subtitle and an "error text" on the bottom left.
     --TriggerEvent("cS.PopupWarning", _title, _subtitle, _errorText, _waitTimeSeconds, _playShound)
     TriggerEvent("cS.PopupWarning", "~y~Test Scaleform~s~.", "You ~g~can ~r~use ~y~colors ~b~here ~s~too.", "ERROR 420: Scaleforms too hot.", 5, true)
-end)
+end, false)
 
 RegisterCommand('cd', function() --Race countdown. waitTime is also the starting number. Plays sound only at the start.
     --TriggerEvent("cS.Countdown", _r, _g, _b, _waitTimeSeconds, _playSound)
     TriggerEvent("cS.Countdown", 0, 150, 200, 10, true)
-end)
+end, false)
 
 RegisterCommand('me', function() --midsize banner. Same as big banner, but midsized.
     --TriggerEvent("cS.MidsizeBanner", _title, _subtitle, _waitTimeSeconds, _playShound)
     TriggerEvent("cS.MidsizeBanner", "~y~Test Scaleform~s~.", "You ~g~can ~r~use ~y~colors ~b~here ~s~too.", 2, 9, true)
-end)
+end, false)
 
 RegisterCommand('rp', function() --Results panel. _slots argument needs to be a table. slots[i].state can be 0 or 2 for "not selected" and 1 or 3 for "selected".
     local slots = {
@@ -38,7 +38,7 @@ RegisterCommand('rp', function() --Results panel. _slots argument needs to be a 
     }
     --TriggerEvent("cS.resultsPanel", _title, _subtitle, _slotsTable, _waitTimeSeconds, _playSound)
     TriggerEvent("cS.resultsPanel", "~y~Test Scaleform~s~.", "You ~g~can ~r~use ~y~colors ~b~here ~s~too.", slots, 5, true)
-end)
+end, false)
 
 RegisterCommand('mi', function() --Mission info panel
     local data = {
@@ -51,9 +51,8 @@ RegisterCommand('mi', function() --Mission info panel
         cash = 0,
         time = ""
     }
-    --TriggerEvent("cS.missionInfo", _data, _x, _y, _width, _waitTime, _playSound)
     TriggerEvent("cS.missionInfo", data, 0.5, 0.5, 0.5, 5, true)
-end)
+end, false)
 
 RegisterCommand('heist', function()
     --All 4 tables are required in order to proprer syncronize the scaleform.
@@ -95,19 +94,19 @@ RegisterCommand('heist', function()
         rankTextBig = "~b~Nice.~s~",
     }
     TriggerEvent("cS.HeistFinale", _initialText, _table, _money, _xp, true)
-end)
+end, false)
 
 RegisterCommand('credits', function() --Credit Block. You can add a role, and how many people you want. 8 _waitTimeSeconds should be the standard.
     --TriggerEvent("cS.Credits", roleString, namesString, xScreenCoord, yScreenCoord, _waitTimeSeconds, _playSound)
     --If you want more names in the namesString field, separate them with \n like in the example
-    CreateThread(function()
+    Citizen.CreateThread(function()
         TriggerEvent("cS.Credits", "Test Role", "Name1 \n   Name 2", 0.4, 0.5, 8, true)
         Citizen.Wait(10*1000)
         TriggerEvent("cS.Credits", "Decompiled scaleforms provided by", "Vespura", 0.7, 0.2, 8, false)
         Citizen.Wait(10*1000)
         TriggerEvent("cS.Credits", "Third Credit Block", "Just for looks", 1.0, 0.15, 8, false)
     end)
-end)
+end, false)
 
 RegisterCommand('title', function(source, args)
     if args[1] ~= nil then
@@ -123,7 +122,7 @@ RegisterCommand('title', function(source, args)
     else
         TriggerEvent("cS.ChangePauseMenuTitle", "Please type a name after ~y~/title~s~.")
     end
-end)
+end, false)
 
 RegisterCommand('save', function(source, args) --Usage: /save You can write anything here
     local _message = ""
@@ -136,7 +135,7 @@ RegisterCommand('save', function(source, args) --Usage: /save You can write anyt
     end
     --TriggerEvent('cS.Saving', _text, _type, _waitTime, _playSound)
     TriggerEvent('cS.Saving', _message, 1, 7, true) --type 1 = scalefrom. 2 or other = non-scaleform.
-end)
+end, false)
 
 RegisterCommand('save2', function(source, args) --Usage: /save You can write anything here
     local _message = ""
@@ -149,25 +148,25 @@ RegisterCommand('save2', function(source, args) --Usage: /save You can write any
     end
     --TriggerEvent('cS.Saving', _text, _type, _waitTime, _playSound)
     TriggerEvent('cS.Saving', _message, 2, 7, true) --type 1 = scalefrom. 2 or other = non-scaleform.
-end)
+end, false)
 
 
 RegisterCommand('shutter', function(source, args) --Usage: /save You can write anything here
     --TriggerEvent('cS.Saving', _text, _type, _waitTime, _playSound)
     TriggerEvent('cS.Shutter', 7, true) --type 1 = scalefrom. 2 or other = non-scaleform.
-end)
+end, false)
 
 RegisterCommand('whouse', function(source, args) --Usage: /save You can write anything here
     --TriggerEvent('cS.Saving', _text, _type, _waitTime, _playSound)
     TriggerEvent('cS.Warehouse', 20, true) --type 1 = scalefrom. 2 or other = non-scaleform.
-end)
+end, false)
 
 RegisterCommand('msm', function(source, args) --Usage: /msm STATE (0 = OFF | 1 = EDIT | 2 = PLAY)
     TriggerEvent('cS.MusicStudioMonitor', tonumber(args[1]), 20)
-end)
+end, false)
 
 RegisterCommand('gamefeed', function(source, args)
     --TriggerEvent(_title, _subtitle, _textblock, _textureDict, _textureName, _rightAlign, _waitTime, _playSound)
     TriggerEvent("cS.GameFeed", "_title", "_subtitle", "_textblock", "v_73_fib01_txd", "xj_v_fibscreen", false, 7, true)
-end)
-]]--
+end, false)
+]]

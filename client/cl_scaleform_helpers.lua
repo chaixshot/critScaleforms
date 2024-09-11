@@ -1,42 +1,63 @@
 Scaleform = {}
 
-function Scaleform.Request(scaleform)
-    local scaleform_handle = RequestScaleformMovie(scaleform)
-    while not HasScaleformMovieLoaded(scaleform_handle) do
+local scaleform = {}
+scaleform.__index = scaleform
+
+function Scaleform.Request(Name)
+    local ScaleformHandle = RequestScaleformMovie(Name)
+    local timer = (Config.Game.ScaleformRequestTimeout or 1000)
+    while not HasScaleformMovieLoaded(ScaleformHandle) and timer > 0 do
+        timer = timer-1
         Citizen.Wait(0)
     end
-    return scaleform_handle
+    local data = {name = Name, handle = ScaleformHandle}
+    return setmetatable(data, scaleform)
 end
 
-function Scaleform.CallFunction(scaleform, returndata, the_function, ...)
-    BeginScaleformMovieMethod(scaleform, the_function)
-    local args = {...}
-
-    if args ~= nil then
-        for i = 1,#args do
-            local arg_type = type(args[i])
-
-            if arg_type == "boolean" then
-                ScaleformMovieMethodAddParamBool(args[i])
-            elseif arg_type == "number" then
-                if not string.find(args[i], '%.') then
-                    ScaleformMovieMethodAddParamInt(args[i])
+function scaleform:CallFunction(theFunction, ...)
+    BeginScaleformMovieMethod(self.handle, theFunction)
+    local arg = { ... }
+    if arg ~= nil then
+        for i = 1, #arg do
+            local sType = type(arg[i])
+            if sType == "boolean" then
+                ScaleformMovieMethodAddParamBool(arg[i])
+            elseif sType == "number" then
+                if math.type(arg[i]) == "integer" then
+                    ScaleformMovieMethodAddParamInt(arg[i])
                 else
-                    ScaleformMovieMethodAddParamFloat(args[i])
+                    ScaleformMovieMethodAddParamFloat(arg[i])
                 end
-            elseif arg_type == "string" then
-                ScaleformMovieMethodAddParamTextureNameString(args[i])
+            elseif sType == "string" then
+				ScaleformMovieMethodAddParamTextureNameString(arg[i])
             end
         end
-
-        if not returndata then
-            EndScaleformMovieMethod()
-        else
-            return EndScaleformMovieMethodReturnValue()
-        end
+        EndScaleformMovieMethod()
     end
 end
 
-function Scaleform:Dispose(scaleform)
-    SetScaleformMovieAsNoLongerNeeded(scaleform)
+function scaleform:Draw2D()
+    DrawScaleformMovieFullscreen(self.handle, 255, 255, 255, 255, 0)
 end
+
+function scaleform:Render2DScreenSpace(locx, locy, sizex, sizey)
+    local Width, Height = GetScreenResolution()
+    local x = locy / Width
+    local y = locx / Height
+    local width = sizex / Width
+    local height = sizey / Height
+    DrawScaleformMovie(self.handle, x + (width / 2.0), y + (height / 2.0), width, height, 255, 255, 255, 255, 0)
+end
+
+function scaleform:Render3D(pos, rot, scalex, scaley, scalez)
+    DrawScaleformMovie_3dSolid(self.handle, pos.x, pos.y, pos.z, rot.x, rot.y, rot.z, 2.0, 2.0, 1.0, scalex, scaley, scalez, 2)
+end
+
+function scaleform:Render3DAdditive(pos, rot, scalex, scaley, scalez)
+    DrawScaleformMovie_3d(self.handle, pos.x, pos.y, pos.z, rot.x, rot.y, rot.z, 2.0, 2.0, 1.0, scalex, scaley, scalez, 2)
+end
+
+function scaleform:Dispose()
+    SetScaleformMovieAsNoLongerNeeded(self.handle)
+end
+
