@@ -407,11 +407,11 @@ end
 
 ---comment
 ---@param initialText table<string, string, string>: { missionTextLabel, passFailTextLabel, messageLabel }
----@param dataTable table<table>: { _table }
+---@param dataTable table
 ---@param money table startMoney, finishMoney, topText, bottomText, rightHandStat, rightHandStatIcon
 ---@param xp table xpGained, xpBeforeGain, minLevelXP, maxLevelXP, currentRank, nextRank, rankTextSmall, rankTextBig 
 ---@param playSound boolean Play sound?
----@param cb function
+---@param cb function|nil
 ---@return CSform:ShowHeist
 function CSform:ShowHeist(initialText, dataTable, money, xp, playSound, cb)
     if playSound ~= nil and playSound == true then
