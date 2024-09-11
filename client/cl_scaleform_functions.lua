@@ -1,117 +1,361 @@
-scalformTimer = {
-    ['ShowBanner'] = {isShown = false, timer = 0},
-    ['ShowSplashText'] = {isShown = false, timer = 0},
-    ['ShowResultsPanel'] = {isShown = false, timer = 0},
-    ['showMissionQuit'] = {isShown = false, timer = 0},
-    ['showPopupWarning'] = {isShown = false, timer = 0},
-    ['showCountdown'] = {isShown = false, timer = 0},
-    ['showMidsizeBanner'] = {isShown = false, timer = 0},
-    ['showSaving'] = {isShown = false, timer = 0},
-}
-
-
-function ShowBanner(_text1, _text2)
-    local scaleform = Scaleform.Request('MP_BIG_MESSAGE_FREEMODE')
-    scaleform:CallFunction("SHOW_SHARD_CENTERED_MP_MESSAGE")
-    scaleform:CallFunction("SHARD_SET_TEXT", _text1, _text2, 0)
-    return scaleform
+---@class CSform
+CSform = setmetatable({}, CSform)
+CSform.__index = CSform
+CSform.__call = function()
+	return "csForm"
 end
 
-function ShowSplashText(_text1, _fadeout)
-    Citizen.CreateThread(function()
-        local scaleform = Scaleform.Request('SPLASH_TEXT')
-        scaleform:CallFunction("SET_SPLASH_TEXT", _text1, 5000, 255, 255, 255, 255)
-        scaleform:CallFunction("SPLASH_TEXT_LABEL", _text1, 255, 255, 255, 255)
-        scaleform:CallFunction("SPLASH_TEXT_COLOR", 255, 255, 255, 255)
-        scaleform:CallFunction("SPLASH_TEXT_TRANSITION_OUT", _fadeout, 0)
-        while CSform.showST do
-            scaleform:Draw2D()
-            Citizen.Wait(0)
-        end
-        scaleform:Dispose()
-    end)
-end
-
-function ShowResultsPanel(_title, _subtitle, _slots)
-    local scaleform = Scaleform.Request('MP_RESULTS_PANEL')
-    scaleform:CallFunction("SET_TITLE", _title)
-    scaleform:CallFunction("SET_SUBTITLE", _subtitle)
-    for i, k in ipairs(_slots) do
-        scaleform:CallFunction("SET_SLOT", i, _slots[i].state, _slots[i].name)
+---Desplay countdown timer on center of screen
+---@param red integer Red 0-255
+---@param green integer Green 0-255
+---@param blue integer Blue 0-255
+---@param waitTime integer 1-inf How long show on screen in second
+---@param playSound boolean Play sound?
+---@return CSform:Countdown
+function CSform:Countdown(red, green, blue, waitTime, playSound)
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "MP_5_SECOND_TIMER", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
     end
-    return scaleform
-end
 
-function ShowMissionInfoPanel(data, _x, _y, _width)
+    self.Show = true
+    self.waitTime = waitTime
+    self.scaleform = Scaleform.Request('COUNTDOWN')
+    self.scaleform:CallFunction("SET_MESSAGE", self.waitTime, red, green, blue, true)
+    self.scaleform:CallFunction("FADE_MP", self.waitTime, red, green, blue)
+
+    self.Stop = function()
+        self.Show = false
+    end
+ 
     Citizen.CreateThread(function()
-        local scaleform = Scaleform.Request('MP_MISSION_NAME_FREEMODE')
-        scaleform:CallFunction("SET_MISSION_INFO", data.name, data.type, "", data.percentage, "", data.rockstarVerified, data.playersRequired, data.rp, data.cash, data.time)
+        while self.Show do
+            Citizen.Wait(1000)
+            if self.Show then
+                if self.waitTime > 1 then
+                    self.waitTime -= 1
+                    self.scaleform:CallFunction("SET_MESSAGE", self.waitTime, red, green, blue, true)
+                    self.scaleform:CallFunction("FADE_MP", self.waitTime, red, green, blue)
 
-        while CSform.showMI do
-            local x = 0.5
-            local y = 0.5
-            local width = 1280
-            local height = 720
-            scaleform:Render2DScreenSpace(x, y, width, height)
-            Citizen.Wait(0)
+                    if playSound then
+                      PlaySoundFrontend(-1, "MP_5_SECOND_TIMER", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
+                    end
+                elseif self.waitTime == 1 then
+                    self.waitTime -= 1
+                    self.scaleform:CallFunction("SET_MESSAGE", "GO", 0, 128, 255, true)
+                    self.scaleform:CallFunction("FADE_MP", "GO", 0, 128, 255)
+                else
+                    self.Show = false
+                end
+            end
         end
-        
-        scaleform:Dispose()
     end)
-end
 
-function showMissionQuit(title, subtitle, duration)
     Citizen.CreateThread(function()
-        local scaleform = Scaleform.Request('MISSION_QUIT')
-        scaleform:CallFunction("SET_TEXT", title, subtitle)
-        scaleform:CallFunction("TRANSITION_IN", 0)
-        scaleform:CallFunction("TRANSITION_OUT", 3000)
-        
-        while CSform.showMQ do
-            scaleform:Draw2D()
+        while self.Show do
+            self.scaleform:Draw2D()
             Citizen.Wait(0)
         end
-
-        scaleform:Dispose()
+		self.scaleform:Dispose()
     end)
+
+    return self
 end
 
-function showPopupWarning(title, subtitle, errorCode)
-    Citizen.CreateThread(function()
-        local scaleform = Scaleform.Request('POPUP_WARNING')
-        scaleform:CallFunction("SHOW_POPUP_WARNING", 500.0, title, subtitle, "", true, 0, errorCode)
+---Shows big banner
+---@param title string Text of title
+---@param subtitle string Text of sub title
+---@param waitTime integer 1-inf How long show on screen in second
+---@param playSound boolean Play sound?
+---@return CSform:ShowBanner
+function CSform:ShowBanner(title, subtitle, waitTime, playSound)
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", true)
+    end
 
-        while CSform.showPW do
-            scaleform:Draw2D()
+    self.Show = true
+    self.scaleform = Scaleform.Request('MP_BIG_MESSAGE_FREEMODE')
+    self.scaleform:CallFunction("SHOW_SHARD_CENTERED_MP_MESSAGE")
+    self.scaleform:CallFunction("SHARD_SET_TEXT", title, subtitle, 0)
+
+    self.Stop = function()
+        self.Show = false
+    end
+
+    Citizen.CreateThread(function()
+        Citizen.Wait((tonumber(waitTime) * 1000) - 400)
+        self.scaleform:CallFunction("SHARD_ANIM_OUT", 2, 0.4, 0)
+        Citizen.Wait(400)
+        self.Show = false
+    end)
+
+    Citizen.CreateThread(function()
+        while self.Show do
+            self.scaleform:Draw2D()
+            Citizen.Wait(0)
+        end
+		self.scaleform:Dispose()
+    end)
+
+    return self
+end
+
+---This is a simple text in the middle of the scree, with cursive font
+---@param title string Text of title
+---@param waitTime integer 1-inf How long show on screen in second
+---@param playSound boolean Play sound?
+---@return CSform:ShowSplashText
+function CSform:ShowSplashText(title, waitTime, playSound)
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", true)
+    end
+
+    self.Show = true
+    self.scaleform = Scaleform.Request('SPLASH_TEXT')
+    self.scaleform:CallFunction("SET_SPLASH_TEXT", title, 5000, 255, 255, 255, 255)
+    self.scaleform:CallFunction("SPLASH_TEXT_LABEL", title, 255, 255, 255, 255)
+    self.scaleform:CallFunction("SPLASH_TEXT_COLOR", 255, 255, 255, 255)
+    self.scaleform:CallFunction("SPLASH_TEXT_TRANSITION_OUT", waitTime*1000, 0)
+
+    self.Stop = function()
+        self.Show = false
+    end
+
+    Citizen.CreateThread(function()
+        while self.Show do
+            self.scaleform:Draw2D()
+            Citizen.Wait(0)
+        end
+        self.scaleform:Dispose()
+    end)
+
+    Citizen.CreateThread(function()
+        Citizen.Wait(tonumber(waitTime) * 1000)
+        self.Show = false
+    end)
+
+    return self
+end
+
+---comment
+---@param title string Text of title
+---@param subtitle string Text of sub title
+---@param slots table Argument needs to be a table. slots[i].state can be 0 or 2 for "not selected" and 1 or 3 for "selected".
+---@param waitTime integer 1-inf How long show on screen in second
+---@param playSound boolean Play sound?
+---@return CSform:ShowResultsPanel
+function CSform:ShowResultsPanel(title, subtitle, slots, waitTime, playSound)
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", true)
+    end
+
+    self.Show = true
+    self.scaleform = Scaleform.Request('MP_RESULTS_PANEL')
+    self.scaleform:CallFunction("SET_TITLE", title)
+    self.scaleform:CallFunction("SET_SUBTITLE", subtitle)
+    for i, k in ipairs(slots) do
+        self.scaleform:CallFunction("SET_SLOT", i, slots[i].state, slots[i].name)
+    end
+
+    self.Stop = function()
+        self.Show = false
+    end
+
+    Citizen.CreateThread(function()
+        Citizen.Wait(tonumber(waitTime) * 1000)
+        self.Show = false
+    end)
+
+    Citizen.CreateThread(function()
+        while self.Show do
+            self.scaleform:Draw2D()
             Citizen.Wait(0)
         end
 
-        scaleform:Dispose()
-    end) 
+		self.scaleform:CallFunction("CLEAR_ALL_SLOTS")
+		self.scaleform:Dispose()
+    end)
+
+    return self
 end
 
-function showCountdown(_number, _r, _g, _b)
-    local scaleform = Scaleform.Request('COUNTDOWN')
 
-    scaleform:CallFunction("SET_MESSAGE", _number, _r, _g, _b, true)
-    scaleform:CallFunction("FADE_MP", _number, _r, _g, _b)
+---Mission info panel
+---@param data table<string, string, string, boolean, string, integer, integer, string>: { name, type, percentage, rockstarVerified, playersRequired, rp, cash, time }
+---@param x integer X postion on screen
+---@param y integer X postion on screen
+---@param width integer Screen resolution width
+---@param height integer Screen resolution width
+---@param waitTime integer 1-inf How long show on screen in second
+---@param playSound boolean Play sound?
+---@return CSform:ShowMissionInfoPanel
+function CSform:ShowMissionInfoPanel(data, x, y, width, height, waitTime, playSound)
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", true)
+    end
 
-    return scaleform
-end
+    self.Show = true
+    self.scaleform = Scaleform.Request('MP_MISSION_NAME_FREEMODE')
+    self.scaleform:CallFunction("SET_MISSION_INFO", data.name, data.type, "", data.percentage, "", data.rockstarVerified, data.playersRequired, data.rp, data.cash, data.time)
 
-function showMidsizeBanner(_title, _subtitle, _bannerColor)
-    local scaleform = Scaleform.Request('MIDSIZED_MESSAGE')
+    self.Stop = function()
+        self.Show = false
+    end
 
-    scaleform:CallFunction("SHOW_COND_SHARD_MESSAGE", _title, _subtitle, _bannerColor, true)
-
-    return scaleform
-end
-
-function showCredits(role, name, x, y)
     Citizen.CreateThread(function()
-        local scaleform = Scaleform.Request("OPENING_CREDITS")
-        scaleform:CallFunction("TEST_CREDIT_BLOCK", role, name, 'left', 0.0, 50.0, 1, 5, 10, 10)
+        while self.Show do
+            self.scaleform:Render2DScreenSpace(x, y, width, height)
+            Citizen.Wait(0)
+        end
         
+        self.scaleform:Dispose()
+    end)
+
+    Citizen.CreateThread(function()
+        Citizen.Wait(tonumber(waitTime) * 1000)
+        self.Show = false
+    end)
+
+    return self
+end
+
+---Low opacity black background with title and subtitle.
+---@param title string Text of title
+---@param subtitle string Text of sub title
+---@param waitTime integer 1-inf How long show on screen in second
+---@param playSound boolean Play sound?
+---@return CSform:ShowMissionQuit
+function CSform:ShowMissionQuit(title, subtitle, waitTime, playSound)
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", true)
+    end
+    
+    self.Show = true
+    self.scaleform = Scaleform.Request('MISSION_QUIT')
+    self.scaleform:CallFunction("SET_TEXT", title, subtitle)
+    self.scaleform:CallFunction("TRANSITION_IN", 0)
+    self.scaleform:CallFunction("TRANSITION_OUT", 3000)
+
+    self.Stop = function()
+        self.Show = false
+    end
+
+    Citizen.CreateThread(function()
+        while self.Show do
+            self.scaleform:Draw2D()
+            Citizen.Wait(0)
+        end
+
+        self.scaleform:Dispose()
+    end)
+
+    Citizen.CreateThread(function()
+        Citizen.Wait(tonumber(waitTime) * 1000)
+        self.Show = false
+    end)
+
+    return self
+end
+
+---Opaque black background, with Title, subtitle and an "error text" on the bottom left.
+---@param title string Text of title
+---@param subtitle string Text of sub title
+---@param errorCode string
+---@param waitTime integer 1-inf How long show on screen in second
+---@param playSound boolean Play sound?
+---@return CSform:ShowPopupWarning
+function CSform:ShowPopupWarning(title, subtitle, errorCode, waitTime, playSound)
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", true)
+    end
+    
+    self.Show = true
+    self.scaleform = Scaleform.Request('POPUP_WARNING')
+    self.scaleform:CallFunction("SHOW_POPUP_WARNING", 500.0, title, subtitle, "", true, 0, errorCode)
+
+    self.Stop = function()
+        self.Show = false
+    end
+
+    Citizen.CreateThread(function()
+        while self.Show do
+            self.scaleform:Draw2D()
+            Citizen.Wait(0)
+        end
+
+        self.scaleform:Dispose()
+    end)
+
+    Citizen.CreateThread(function()
+        Citizen.Wait(tonumber(waitTime) * 1000)
+        self.Show = false
+    end)
+
+    return self
+end
+
+---Same as big banner, but midsized.
+---@param title string Text of title
+---@param subtitle string Text of sub title
+---@param bannerColor integer https://docs.fivem.net/docs/game-references/hud-colors/
+---@param waitTime integer 1-inf How long show on screen in second
+---@param playSound boolean Play sound?
+---@return CSform:ShowMidsizeBanner
+function CSform:ShowMidsizeBanner(title, subtitle, bannerColor, waitTime, playSound)
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", true)
+    end
+
+    self.Show = true
+    self.scaleform = Scaleform.Request('MIDSIZED_MESSAGE')
+    self.scaleform:CallFunction("SHOW_COND_SHARD_MESSAGE", title, subtitle, bannerColor, true)
+
+    self.Stop = function()
+        self.Show = false
+    end
+
+    Citizen.CreateThread(function()
+        while self.Show do
+            self.scaleform:Draw2D()
+            Citizen.Wait(0)
+        end
+
+		self.scaleform:Dispose()
+    end)
+
+    Citizen.CreateThread(function()
+        Citizen.Wait((waitTime * 1000) - 1000)
+        if self.Show then
+            self.scaleform:CallFunction("SHARD_ANIM_OUT", 2, 0.3, true)
+            Citizen.Wait(1000)
+            self.Show = false
+        end
+    end)
+
+    return self
+end
+
+---Credit Block. You can add a role, and how many people you want. 8 waitTime should be the standard.
+---@param role string
+---@param nameString string
+---@param x integer X postion on screen
+---@param y integer X postion on screen
+---@param waitTime integer 1-inf How long show on screen in second
+---@param playSound boolean Play sound?
+---@return CSform:ShowCredits
+function CSform:ShowCredits(role, nameString, x, y, waitTime, playSound)
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", true)
+    end
+
+    self.Show = true
+    self.scaleform = Scaleform.Request("OPENING_CREDITS")
+    self.scaleform:CallFunction("TEST_CREDIT_BLOCK", role, nameString, 'left', 0.0, 50.0, 1, 5, 10, 10)
+
+    self.Stop = function()
+        self.Show = false
+    end
+
+    Citizen.CreateThread(function()
         --=================================--
             --SETUP_CREDIT_BLOCK might give more customization, but further testing needs to be done.
             --"HIDE" function completly breaks SETUP_CREDIT_BLOCK, which means to we need to rely on stopping the scaleform draw.
@@ -145,43 +389,78 @@ function showCredits(role, name, x, y)
         --ID | step_duration | anim_out_style (X, Y, xrotation, yrotation, default) | anim_out_value
         --Scaleform:CallFunction("SHOW_SINGLE_LINE", 1, 10, "X", 1)
 
-        while CSform.CreditsBanner do
-            scaleform:Render2DScreenSpace(x, y, 1280, 720)
+        while self.Show do
+            self.scaleform:Render2DScreenSpace(x, y, 1280, 720)
             Citizen.Wait(0)
         end
 
-        scaleform:Dispose()
+        self.scaleform:Dispose()
     end)
-end --NEED TO BE REWORKED
 
-function showHeist(_initialText, _table, money, xp, _waitTime)
     Citizen.CreateThread(function()
-        local scaleform = Scaleform.Request('MP_CELEBRATION')
-        local scaleform_bg = Scaleform.Request('MP_CELEBRATION_FG')
-        local background = Scaleform.Request("MP_CELEBRATION_BG")
-        background:CallFunction("SET_PAUSE_DURATION", _waitTime-1.0)
-        background:CallFunction("CREATE_STAT_WALL", "ch", "HUD_COLOUR_BLACK", -1)
-        background:CallFunction("ADD_SCORE_TO_WALL", "ch")
-        background:CallFunction("ADD_BACKGROUND_TO_WALL", "ch", 80, 5)
-        background:CallFunction("SHOW_STAT_WALL", "ch")
+        Citizen.Wait(tonumber(waitTime) * 1000)
+        CSform.CreditsBanner = false
+    end)
 
+    return self
+end
+
+---comment
+---@param initialText table<string, string, string>: { missionTextLabel, passFailTextLabel, messageLabel }
+---@param dataTable table<table>: { _table }
+---@param money table startMoney, finishMoney, topText, bottomText, rightHandStat, rightHandStatIcon
+---@param xp table xpGained, xpBeforeGain, minLevelXP, maxLevelXP, currentRank, nextRank, rankTextSmall, rankTextBig 
+---@param playSound boolean Play sound?
+---@param cb function
+---@return CSform:ShowHeist
+function CSform:ShowHeist(initialText, dataTable, money, xp, playSound, cb)
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", true)
+    end
+
+    local _waitTime = 2.5
+	_waitTime = _waitTime+((#dataTable <= 7 and #dataTable or 7)) + 0.5
+	if money.startMoney ~= money.finishMoney then
+		_waitTime = _waitTime+3.5
+	end
+	if xp.xpGained+xp.xpBeforeGain >= xp.maxLevelXP then
+		_waitTime = _waitTime+5.5
+	elseif xp.xpGained ~= 0 then
+		_waitTime = _waitTime+2.5
+	end
+
+    self.Show = true
+    self.scaleform = Scaleform.Request('MP_CELEBRATION')
+    self.scaleform_bg = Scaleform.Request('MP_CELEBRATION_FG')
+    self.background = Scaleform.Request("MP_CELEBRATION_BG")
+    self.background:CallFunction("SET_PAUSE_DURATION", _waitTime-1.0)
+    self.background:CallFunction("CREATE_STAT_WALL", "ch", "HUD_COLOUR_BLACK", -1)
+    self.background:CallFunction("ADD_SCORE_TO_WALL", "ch")
+    self.background:CallFunction("ADD_BACKGROUND_TO_WALL", "ch", 80, 5)
+    self.background:CallFunction("SHOW_STAT_WALL", "ch")
+
+    self.Stop = function ()
+        self.Show = false
+    end
+
+    Citizen.CreateThread(function()
         local scaleform_list = {
-            scaleform,
-            scaleform_bg,
+            self.scaleform,
+            self.scaleform_bg,
         }
 
         for key, handle in pairs(scaleform_list) do
             handle:CallFunction("CREATE_STAT_WALL", 1, "HUD_COLOUR_FREEMODE_DARK", 1)
             handle:CallFunction("ADD_BACKGROUND_TO_WALL", 1, 80, 5)
 
-            handle:CallFunction("ADD_MISSION_RESULT_TO_WALL", 1, _initialText.missionTextLabel, _initialText.passFailTextLabel, _initialText.messageLabel, true, true, true)
+            handle:CallFunction("ADD_MISSION_RESULT_TO_WALL", 1, initialText.missionTextLabel, initialText.passFailTextLabel, initialText.messageLabel, true, true, true)
 
-            if _table[1] ~= nil then
+            if dataTable[1] ~= nil then
                 handle:CallFunction("CREATE_STAT_TABLE", 1, 20)
 
-                for i, k in pairs(_table) do
+                for i, k in pairs(dataTable) do
                     if i <=7 then
-                        handle:CallFunction("ADD_STAT_TO_TABLE", 1, 20, _table[i].stat, _table[i].value, true, true, false, false, 0)
+                        handle:CallFunction("ADD_STAT_TO_TABLE", 1, 20, dataTable[i].stat, dataTable[i].value, true, true, false, false, 0)
                     end
                 end
 
@@ -202,94 +481,269 @@ function showHeist(_initialText, _table, money, xp, _waitTime)
             handle:CallFunction("createSequence", 1, 1, 1)
         end
 
-        local timer = GetGameTimer()
-        while CSform.HeistBanner do
-            DrawScaleformMovieFullscreen(background.handle, 255, 255, 255, 50, 0)
+        while self.Show do
+            DrawScaleformMovieFullscreen(self.background.handle, 255, 255, 255, 50, 0)
             HideHudAndRadarThisFrame()
-            scaleform:Draw2D()
-            scaleform_bg:Draw2D()
+            self.scaleform:Draw2D()
+            self.scaleform_bg:Draw2D()
 
             Citizen.Wait(0)
         end
 
-        scaleform:CallFunction("CLEANUP", 1)
-        scaleform_bg:CallFunction("CLEANUP", 1)
-        background:CallFunction("CLEANUP", "ch")
-        scaleform:Dispose()
-        scaleform_bg:Dispose()
-        background:Dispose()
+        self.scaleform:CallFunction("CLEANUP", 1)
+        self.scaleform_bg:CallFunction("CLEANUP", 1)
+        self.background:CallFunction("CLEANUP", "ch")
+        self.scaleform:Dispose()
+        self.scaleform_bg:Dispose()
+        self.background:Dispose()
 
         AnimpostfxPlay("HeistCelebToast", 0, false)
+
+        if cb then
+            cb()
+        end
     end)
+
+    Citizen.CreateThread(function()
+        Citizen.Wait(tonumber(_waitTime) * 1000)
+        if self.Show then
+            self.Show = false
+        end
+    end)
+
+    return self
 end
 
-function ChangePauseMenuTitle(title)
+---Change pause menu title text
+---@param title string Text of title
+function CSform:ChangePauseMenuTitle(title)
     AddTextEntry('FE_THDR_GTAO', title)
 end
 
-function showSaving(subtitle)
-    Citizen.CreateThread(function()
-        local scaleform = Scaleform.Request('HUD_SAVING')
-        scaleform:CallFunction("SET_SAVING_TEXT_STANDALONE", 1, subtitle)
-        scaleform:CallFunction("SHOW")
+---You can write anything here
+---@param subtitle string Text of sub title
+---@param saveType integer 1-2
+---@param waitTime integer 1-inf How long show on screen in second
+---@param playSound boolean Play sound?
+---@return CSform:ShowSaving
+function CSform:ShowSaving(subtitle, saveType, waitTime, playSound)
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", true)
+    end
 
-        while CSform.toggleSave do
-            scaleform:Render2DScreenSpace(680.0, 900.0, 350, 30)
-            Citizen.Wait(0)
+    self.saveType = saveType
+    
+    self.Stop = function ()
+        if self.saveType == 1 then
+            self.Show = false
+        else
+            BusyspinnerOff()
+        end
+    end
+
+    if self.saveType == 1 then
+        Citizen.CreateThread(function()
+            self.Show = true
+            self.scaleform = Scaleform.Request('HUD_SAVING')
+            self.scaleform:CallFunction("SET_SAVING_TEXT_STANDALONE", 1, subtitle)
+            self.scaleform:CallFunction("SHOW")
+
+            while self.Show do
+                self.scaleform:Render2DScreenSpace(680.0, 900.0, 350, 30)
+                Citizen.Wait(0)
+            end
+        end)
+    else
+        BeginTextCommandBusyspinnerOn("STRING")
+        AddTextComponentSubstringPlayerName(subtitle)
+        EndTextCommandBusyspinnerOn(1)
+    end
+
+    Citizen.CreateThread(function()
+        Citizen.Wait(tonumber(waitTime) * 1000)
+        if self.saveType == 1 then
+            self.Show = false
+        else
+            BusyspinnerOff()
         end
     end)
+
+    return self
 end
 
-function showWarehouse()
-    local scaleform = Scaleform.Request('WAREHOUSE')
-    scaleform:CallFunction("SET_WAREHOUSE_DATA", 'nameLabel', 'locationLabel', 'txd', 'large', 16, 16, 50000, 1, 0)
-    scaleform:CallFunction("SET_PLAYER_DATA", 'gamerTag', 'organizationName', 'sellerRating', 'numSales', 'totalEarnings')
-    scaleform:CallFunction("SET_BUYER_DATA", 'buyerOrganization0', 'amount0', 'offerPrice0', 'buyerOrganization1', 'amount1', 'offerPrice1', 'buyerOrganization2', 'amount2', 'offerPrice2', 'buyerOrganization3', 'amount3', 'offerPrice3')
+---comment
+---@param waitTime integer 1-inf How long show on screen in second
+---@param playSound boolean Play sound?
+---@return CSform:ShowWarehouse
+function CSform:ShowWarehouse(waitTime, playSound)
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", true)
+    end
 
-    scaleform:CallFunction("SHOW_OVERLAY", 'titleLabel', 'messageLabel', 'acceptButtonLabel', 'cancelButtonLabel', 'success')
-    scaleform:CallFunction("SET_MOUSE_INPUT", 0.6, 0.6)
+    self.Show = true 
+    self.scaleform = Scaleform.Request('WAREHOUSE')
+    self.scaleform:CallFunction("SET_WAREHOUSE_DATA", 'nameLabel', 'locationLabel', 'txd', 'large', 16, 16, 50000, 1, 0)
+    self.scaleform:CallFunction("SET_PLAYER_DATA", 'gamerTag', 'organizationName', 'sellerRating', 'numSales', 'totalEarnings')
+    self.scaleform:CallFunction("SET_BUYER_DATA", 'buyerOrganization0', 'amount0', 'offerPrice0', 'buyerOrganization1', 'amount1', 'offerPrice1', 'buyerOrganization2', 'amount2', 'offerPrice2', 'buyerOrganization3', 'amount3', 'offerPrice3')
 
-    return scaleform
+    self.scaleform:CallFunction("SHOW_OVERLAY", 'titleLabel', 'messageLabel', 'acceptButtonLabel', 'cancelButtonLabel', 'success')
+    self.scaleform:CallFunction("SET_MOUSE_INPUT", 0.6, 0.6)
+
+
+    self.Stop = function ()
+        self.Show = false
+    end
+
+    Citizen.CreateThread(function()
+        Citizen.Wait(2000)
+        --self.scaleform.CallFunction(scale, false, "SET_INPUT_EVENT", 2)
+        Citizen.Wait(2000)
+        self.scaleform:CallFunction("GET_CURRENT_SELECTION") --we get the scaleform return
+
+        local ret = EndScaleformMovieMethodReturnValue()
+        while true do
+            if IsScaleformMovieMethodReturnValueReady(ret) then --scaleform takes it's sweet time, so we need to wait for the value to be registered, or calculated or something, idk
+                GetScaleformMovieMethodReturnValueInt(ret) --output value. Can be Int, String or Bool. In my case is Int, and it's the "slotID" value that you set with Scaleform:CallFunction("DISPLAY_VIEW", viewID, slotID)
+                break
+            end
+            Citizen.Wait(0)
+        end
+
+        Citizen.Wait((tonumber(waitTime) * 1000) - 4000)
+
+        self.Show = false
+    end)
+
+    Citizen.CreateThread(function()
+        while self.Show do
+            self.scaleform:Draw2D()
+            Citizen.Wait(0)
+        end
+
+		self.scaleform:Dispose()
+    end)
+
+    return self
 end
 
-function showMusicStudioMonitor(state)
-    local scaleform = Scaleform.Request('MUSIC_STUDIO_MONITOR')
-    scaleform:CallFunction("SET_STATE", state)
+---comment
+---@param state integer 0 = OFF, 1 = EDIT, 2 = PLAY
+---@param waitTime integer 1-inf How long show on screen in second
+---@return CSform:ShowMusicStudioMonitor
+function CSform:ShowMusicStudioMonitor(state, waitTime)
+    self.Show = true
+    self.scaleform = Scaleform.Request('MUSIC_STUDIO_MONITOR')
+    self.scaleform:CallFunction("SET_STATE", state)
 
-    return scaleform
+    self.Stop = function ()
+        self.Show = false
+    end
+
+    Citizen.CreateThread(function()
+        Citizen.Wait(waitTime * 1000)
+        self.Show = false
+    end)
+
+    Citizen.CreateThread(function()
+        while self.Show do
+            self.scaleform:Draw2D()
+            
+            Citizen.Wait(0)
+        end
+
+		self.scaleform:Dispose()
+    end)
+
+    return self
 end
 
-function ShowBusySpinnerNoScaleform(_text)
-    BeginTextCommandBusyspinnerOn("STRING")
-    AddTextComponentSubstringPlayerName(_text)
-    EndTextCommandBusyspinnerOn(1)
+---comment
+---@param waitTime integer 1-inf How long show on screen in second
+---@param playSound boolean Play sound?
+---@return CSform:ShowShutter
+function CSform:ShowShutter(waitTime, playSound)
+    self.Show = true
+    self.scaleform = Scaleform.Request('CAMERA_GALLERY')
+    self.scaleform:CallFunction("CLOSE_THEN_OPEN_SHUTTER")
+    self.scaleform:CallFunction("SHOW_PHOTO_FRAME", 1)
+    self.scaleform:CallFunction("SHOW_REMAINING_PHOTOS", 1)
+    self.scaleform:CallFunction("FLASH_PHOTO_FRAME")
+
+    self.Stop = function ()
+        self.Show = false
+    end
+
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", 1)
+    end
+
+    Citizen.CreateThread(function()
+        Citizen.Wait((tonumber(waitTime) * 1000) - 1000)
+        if self.Show then
+            self.scaleform:CallFunction("CLOSE_THEN_OPEN_SHUTTER")
+            Citizen.Wait(1000)
+            self.Show = false
+        end
+    end)
+
+    Citizen.CreateThread(function()
+        while self.Show do
+            self.scaleform:Draw2D()
+            Citizen.Wait(0)
+        end
+
+		self.scaleform:Dispose()
+    end)
+
+    return self
 end
 
-function ShowShutter()
-    local scaleform = Scaleform.Request('CAMERA_GALLERY')
-    scaleform:CallFunction("CLOSE_THEN_OPEN_SHUTTER")
-    scaleform:CallFunction("SHOW_PHOTO_FRAME", 1)
-    scaleform:CallFunction("SHOW_REMAINING_PHOTOS", 1)
-    scaleform:CallFunction("FLASH_PHOTO_FRAME")
-
-    return scaleform
-end
-
-function ShowGameFeed(title, subtitle, textblock, textureDirectory, textureName, rightAlign)
-    local scaleform = Scaleform.Request('GTAV_ONLINE')
-
-    scaleform:CallFunction("SETUP_BIGFEED", rightAlign)
-    scaleform:CallFunction("HIDE_ONLINE_LOGO")
-    scaleform:CallFunction("SET_BIGFEED_INFO", "footer", textblock, 0, "", "", subtitle, "URL", title, 0)
+---comment
+---@param title string Text of title
+---@param subtitle string Text of sub title
+---@param textblock string
+---@param textureDirectory string
+---@param textureName string
+---@param rightAlign boolean
+---@param waitTime integer 1-inf How long show on screen in second
+---@param playSound boolean Play sound?
+---@return CSform:ShowGameFeed
+function CSform:ShowGameFeed(title, subtitle, textblock, textureDirectory, textureName, rightAlign, waitTime, playSound)
+    self.Show = true
+    self.scaleform = Scaleform.Request('GTAV_ONLINE')
+    self.scaleform:CallFunction("SETUP_BIGFEED", rightAlign)
+    self.scaleform:CallFunction("HIDE_ONLINE_LOGO")
+    self.scaleform:CallFunction("SET_BIGFEED_INFO", "footer", textblock, 0, "", "", subtitle, "URL", title, 0)
 
     RequestStreamedTextureDict(textureDirectory, false)
     while not HasStreamedTextureDictLoaded(textureDirectory) do
         Citizen.Wait(0)
     end
+
+    if playSound ~= nil and playSound == true then
+        PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", true)
+    end
     
-    scaleform:CallFunction("SET_BIGFEED_IMAGE", textureDirectory, textureName)
-    scaleform:CallFunction("SET_NEWS_CONTEXT", 0)
-    scaleform:CallFunction("FADE_IN_BIGFEED")
-    
-    return scaleform
+    self.scaleform:CallFunction("SET_BIGFEED_IMAGE", textureDirectory, textureName)
+    self.scaleform:CallFunction("SET_NEWS_CONTEXT", 0)
+    self.scaleform:CallFunction("FADE_IN_BIGFEED")
+
+    self.Stop = function ()
+        self.Show = false
+    end
+
+    Citizen.CreateThread(function()
+        Citizen.Wait(waitTime * 1000)
+        self.Show = false
+    end)
+
+    Citizen.CreateThread(function()
+        while self.Show do
+            self.scaleform:Draw2D()
+            Citizen.Wait(0)
+        end
+		self.scaleform:Dispose()
+    end)
+
+    return self
 end
