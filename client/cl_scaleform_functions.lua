@@ -181,8 +181,8 @@ end
 
 ---Mission info panel
 ---@param data table<string, string, string, boolean, string, integer, integer, string>: { name, type, percentage, rockstarVerified, playersRequired, rp, cash, time }
----@param x integer X postion on screen
----@param y integer X postion on screen
+---@param x integer X position on screen
+---@param y integer X position on screen
 ---@param width integer Screen resolution width
 ---@param height integer Screen resolution width
 ---@param waitTime integer 1-inf How long show on screen in second
@@ -337,8 +337,8 @@ end
 ---Credit Block. You can add a role, and how many people you want. 8 waitTime should be the standard.
 ---@param role string
 ---@param nameString string
----@param x integer X postion on screen
----@param y integer X postion on screen
+---@param x integer X position on screen
+---@param y integer X position on screen
 ---@param waitTime integer 1-inf How long show on screen in second
 ---@param playSound boolean Play sound?
 ---@return CSform:ShowCredits
