@@ -431,13 +431,13 @@ function CSform:ShowHeist(initialText, dataTable, money, xp, playSound, cb)
 
     self.Show = true
     self.scaleform = Scaleform.Request('MP_CELEBRATION')
-    self.scaleform_bg = Scaleform.Request('MP_CELEBRATION_FG')
-    self.background = Scaleform.Request("MP_CELEBRATION_BG")
-    self.background:CallFunction("SET_PAUSE_DURATION", _waitTime-1.0)
-    self.background:CallFunction("CREATE_STAT_WALL", "ch", "HUD_COLOUR_BLACK", -1)
-    self.background:CallFunction("ADD_SCORE_TO_WALL", "ch")
-    self.background:CallFunction("ADD_BACKGROUND_TO_WALL", "ch", 80, 5)
-    self.background:CallFunction("SHOW_STAT_WALL", "ch")
+    self.scaleform_fg = Scaleform.Request('MP_CELEBRATION_FG')
+    self.scaleform_bg = Scaleform.Request("MP_CELEBRATION_BG")
+    self.scaleform_bg:CallFunction("SET_PAUSE_DURATION", _waitTime-1.0)
+    self.scaleform_bg:CallFunction("CREATE_STAT_WALL", "ch", "HUD_COLOUR_BLACK", -1)
+    self.scaleform_bg:CallFunction("ADD_SCORE_TO_WALL", "ch")
+    self.scaleform_bg:CallFunction("ADD_BACKGROUND_TO_WALL", "ch", 80, 5)
+    self.scaleform_bg:CallFunction("SHOW_STAT_WALL", "ch")
 
     self.Stop = function ()
         self.Show = false
@@ -446,7 +446,7 @@ function CSform:ShowHeist(initialText, dataTable, money, xp, playSound, cb)
     Citizen.CreateThread(function()
         local scaleform_list = {
             self.scaleform,
-            self.scaleform_bg,
+            self.scaleform_fg,
         }
 
         for key, handle in pairs(scaleform_list) do
@@ -482,20 +482,19 @@ function CSform:ShowHeist(initialText, dataTable, money, xp, playSound, cb)
         end
 
         while self.Show do
-            DrawScaleformMovieFullscreen(self.background.handle, 255, 255, 255, 50, 0)
             HideHudAndRadarThisFrame()
-            self.scaleform:Draw2D()
-            self.scaleform_bg:Draw2D()
+            DrawScaleformMovieFullscreenMasked(self.scaleform_bg.handle, self.scaleform_fg.handle, 255, 255, 255, 50)
+		    self.scaleform:Draw2D()
 
             Citizen.Wait(0)
         end
 
         self.scaleform:CallFunction("CLEANUP", 1)
-        self.scaleform_bg:CallFunction("CLEANUP", 1)
-        self.background:CallFunction("CLEANUP", "ch")
+        self.scaleform_fg:CallFunction("CLEANUP", 1)
+        self.scaleform_bg:CallFunction("CLEANUP", "ch")
         self.scaleform:Dispose()
+        self.scaleform_fg:Dispose()
         self.scaleform_bg:Dispose()
-        self.background:Dispose()
 
         AnimpostfxPlay("HeistCelebToast", 0, false)
 
