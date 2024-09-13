@@ -483,8 +483,9 @@ function CSform:ShowHeist(initialText, dataTable, money, xp, playSound, cb)
 
         while self.Show do
             HideHudAndRadarThisFrame()
-            DrawScaleformMovieFullscreenMasked(self.scaleform_bg.handle, self.scaleform_fg.handle, 255, 255, 255, 50)
 		    self.scaleform:Draw2D()
+			self.scaleform_bg:Draw2D()
+		    self.scaleform_fg:Draw2D()
 
             Citizen.Wait(0)
         end
