@@ -13,52 +13,65 @@ end
 ---@param playSound boolean Play sound?
 ---@return CSform:Countdown
 function CSform:Countdown(red, green, blue, waitTime, playSound)
-    if playSound ~= nil and playSound == true then
-        PlaySoundFrontend(-1, "MP_5_SECOND_TIMER", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
-    end
+	if playSound ~= nil and playSound == true then
+		PlaySoundFrontend(-1, "MP_5_SECOND_TIMER", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
+	end
 
-    self.Show = true
-    self.waitTime = waitTime
-    self.scaleform = Scaleform.Request('COUNTDOWN')
-    self.scaleform:CallFunction("SET_MESSAGE", self.waitTime, red, green, blue, true)
-    self.scaleform:CallFunction("FADE_MP", self.waitTime, red, green, blue)
+	self.Show = true
+	self.waitTime = waitTime
+	self.scaleform = Scaleform.Request('COUNTDOWN')
+	self.scaleform:CallFunction("SET_MESSAGE", self.waitTime, red, green, blue, true)
+	self.scaleform:CallFunction("FADE_MP", self.waitTime, red, green, blue)
 
-    self.Stop = function()
-        self.Show = false
-    end
- 
-    Citizen.CreateThread(function()
-        while self.Show do
-            Citizen.Wait(1000)
-            if self.Show then
-                if self.waitTime > 1 then
-                    self.waitTime -= 1
-                    self.scaleform:CallFunction("SET_MESSAGE", self.waitTime, red, green, blue, true)
-                    self.scaleform:CallFunction("FADE_MP", self.waitTime, red, green, blue)
+	self.Stop = function()
+		self.Show = false
+	end
 
-                    if playSound then
-                      PlaySoundFrontend(-1, "MP_5_SECOND_TIMER", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
-                    end
-                elseif self.waitTime == 1 then
-                    self.waitTime -= 1
-                    self.scaleform:CallFunction("SET_MESSAGE", "GO", 0, 128, 255, true)
-                    self.scaleform:CallFunction("FADE_MP", "GO", 0, 128, 255)
-                else
-                    self.Show = false
-                end
-            end
-        end
-    end)
+	Citizen.CreateThread(function()
+		local timeout = GetNetworkTime()
+		local Lock = {}
+		local countTo = self.waitTime
+		while self.Show do
+			for i=1, countTo+1 do
+				if GetTimeDifference(GetNetworkTime(), timeout) > i*1000 and not Lock[i] then
+					Lock[i] = true
+					if self.Show then
+						if self.waitTime > 1 then
+							self.waitTime -= 1
+							self.scaleform:CallFunction("SET_MESSAGE", self.waitTime, red, green, blue, true)
+							self.scaleform:CallFunction("FADE_MP", self.waitTime, red, green, blue)
+		
+							if playSound then
+								PlaySoundFrontend(-1, "MP_5_SECOND_TIMER", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
+							end
+						elseif self.waitTime == 1 then
+							self.waitTime -= 1
+							self.scaleform:CallFunction("SET_MESSAGE", "GO", 0, 128, 255, true)
+							self.scaleform:CallFunction("FADE_MP", "GO", 0, 128, 255)
 
-    Citizen.CreateThread(function()
-        while self.Show do
-            self.scaleform:Draw2D()
-            Citizen.Wait(0)
-        end
-		self.scaleform:Dispose()
-    end)
+							if playSound then
+								PlaySoundFrontend(-1, "MP_5_SECOND_TIMER", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
+							end
+						else
+							self.Show = false
+						end
+					end
+				end
+			end
 
-    return self
+			Citizen.Wait(0)
+		end
+	end)
+
+	Citizen.CreateThread(function()
+		while self.Show do
+			self.scaleform:Draw2D()
+			Citizen.Wait(0)
+		end
+	self.scaleform:Dispose()
+	end)
+
+	return self
 end
 
 ---Shows big banner
